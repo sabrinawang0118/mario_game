@@ -79,23 +79,133 @@ class BootScene extends Phaser.Scene {
             pixelWidth: 4
         });
 
-        // --- NEW: Create an 8-bit enemy sprite ---
+        // --- ENHANCED: Create detailed player walking animation frames ---
+        this.textures.generate('playerIdle', {
+            data: [
+                '...66666...',  // More detailed hair
+                '..6555556..',  // hair outline
+                '.655777556.',  // face with eyes (7)
+                '.655555556.',  // face with mouth
+                '..5233235..',  // neck/collar
+                '.523333325.',  // arms/shoulders  
+                '5233bb3325',   // body with belt (b)
+                '.533bb335.',   // body
+                '..533335..',   // waist
+                '..3333333.',   // legs
+                '.33....33.',   // feet
+            ],
+            palette: {
+                2: '#1976d2', // Blue shirt
+                3: '#8d6e63', // Brown pants  
+                5: '#ffcc9a', // Skin tone
+                6: '#424242', // Hair
+                7: '#000000', // Eyes/details
+                'b': '#654321' // Belt
+            },
+            pixelWidth: 3
+        });
+
+        this.textures.generate('playerWalk1', {
+            data: [
+                '...66666...',
+                '..6555556..',
+                '.655777556.',
+                '.655555556.',
+                '..5233235..',
+                '.523333325.',
+                '5233bb3325',
+                '.533bb335.',
+                '..533335..',
+                '.3333..33.',  // Walking pose - one leg forward
+                '33.....33.',
+            ],
+            palette: {
+                2: '#1976d2', 3: '#8d6e63', 5: '#ffcc9a', 
+                6: '#424242', 7: '#000000', 'b': '#654321'
+            },
+            pixelWidth: 3
+        });
+
+        this.textures.generate('playerWalk2', {
+            data: [
+                '...66666...',
+                '..6555556..',
+                '.655777556.',
+                '.655555556.',
+                '..5233235..',
+                '.523333325.',
+                '5233bb3325',
+                '.533bb335.',
+                '..533335..',
+                '.33..3333.',  // Walking pose - other leg forward
+                '.33.....33',
+            ],
+            palette: {
+                2: '#1976d2', 3: '#8d6e63', 5: '#ffcc9a', 
+                6: '#424242', 7: '#000000', 'b': '#654321'
+            },
+            pixelWidth: 3
+        });
+
+        this.textures.generate('playerJump', {
+            data: [
+                '...66666...',
+                '..6555556..',
+                '.655777556.',
+                '.655555556.',
+                '.5523332555',  // Arms raised
+                '5523333255.',
+                '233bb33255',   // Body stretched
+                '.533bb335.',
+                '..533335..',
+                '..33..33..',   // Legs bent for jumping
+                '..33..33..',
+            ],
+            palette: {
+                2: '#1976d2', 3: '#8d6e63', 5: '#ffcc9a', 
+                6: '#424242', 7: '#000000', 'b': '#654321'
+            },
+            pixelWidth: 3
+        });
+
+        // --- ENHANCED: Create more detailed enemy sprite ---
         this.textures.generate('enemySprite', {
             data: [
                 '...4444...',
                 '..433334..',
-                '.43333334.',
+                '.43377334.',  // Added eyes
                 '.43344334.',
-                '.44444444.',
-                '..444444..',
+                '.44999944.',  // Added armor detail
+                '..494494..',
                 '..434434..',
-                '.43344334.',
+                '.43944394.',  // More armor
                 '4334..4334',
-                '4......44.'
+                '44......44'
             ],
             palette: {
-                3: '#800080', // Purple body
-                4: '#000000'  // Black outline/feet
+                3: '#7b1fa2', // Purple body
+                4: '#000000', // Black outline
+                7: '#ff0000', // Red eyes
+                9: '#9c27b0'  // Lighter purple for armor
+            },
+            pixelWidth: 4
+        });
+
+        // --- NEW: Enhanced coin with shine effect ---
+        this.textures.generate('coinShine', {
+            data: [
+                '..1111..',
+                '.122221.',
+                '12233221',
+                '12233221',
+                '12233221',
+                '.122221.',
+                '..1111..'
+            ],
+            palette: {
+                1: '#b8860b', // Dark gold outline
+                2: '#ffd700', // Gold
+                3: '#ffff99'  // Bright shine
             },
             pixelWidth: 4
         });
@@ -166,27 +276,69 @@ class GameScene extends Phaser.Scene {
         this.platforms.create(2500, 200, 'pixel').setScale(200, 32).setTint(0x008000).refreshBody();
 
 
-        // --- PLAYER CREATION (use sprite) ---
-        this.player = this.physics.add.sprite(100, 450, 'playerSprite');
-        this.player.setBounce(0); // Remove bounciness for a more solid feel
+        // --- PLAYER CREATION WITH ANIMATIONS ---
+        this.player = this.physics.add.sprite(100, 450, 'playerIdle');
+        this.player.setBounce(0);
         this.player.setCollideWorldBounds(true);
-        this.player.displayWidth = 40;
-        this.player.displayHeight = 40;
+        this.player.displayWidth = 45;
+        this.player.displayHeight = 45;
+
+        // Create player animations
+        this.anims.create({
+            key: 'idle',
+            frames: [{ key: 'playerIdle' }],
+            frameRate: 1
+        });
+
+        this.anims.create({
+            key: 'walk',
+            frames: [
+                { key: 'playerWalk1' },
+                { key: 'playerIdle' },
+                { key: 'playerWalk2' },
+                { key: 'playerIdle' }
+            ],
+            frameRate: 8,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'jump',
+            frames: [{ key: 'playerJump' }],
+            frameRate: 1
+        });
+
+        // Start with idle animation
+        this.player.play('idle');
 
         // --- CAMERA SETUP ---
         this.cameras.main.setBounds(0, 0, 3200, 600);
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
 
-        // --- COIN CREATION (Using the new sprite) ---
+        // --- ENHANCED COIN CREATION ---
         this.coins = this.physics.add.group({
-            key: 'coin', // Use the new 'coin' texture
+            key: 'coinShine', // Use the enhanced shiny coin texture
             repeat: 20,
             setXY: { x: 150, y: 0, stepX: 140 }
         });
 
+        // Create coin animation for spinning effect
+        this.anims.create({
+            key: 'coinSpin',
+            frames: [
+                { key: 'coin' },
+                { key: 'coinShine' },
+                { key: 'coin' },
+                { key: 'coinShine' }
+            ],
+            frameRate: 4,
+            repeat: -1
+        });
+
         this.coins.children.iterate((child) => {
             child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-            // We no longer need setTint or displayWidth/Height as the texture is pre-styled
+            child.play('coinSpin'); // Make coins spin
+            child.setScale(1.2); // Make them slightly bigger
         });
 
         // --- ENEMY CREATION (use sprite) ---
@@ -360,24 +512,53 @@ class GameScene extends Phaser.Scene {
     update(time) { // The 'time' parameter is provided by Phaser
         if (!this.player.active || !this.cursors) { return; }
 
-        // --- PLAYER MOVEMENT WITH SPRINT ---
+        // --- ENHANCED PLAYER MOVEMENT WITH ANIMATIONS ---
         const baseSpeed = 160;
         const sprintSpeed = 280;
         const isSprinting = this.cursors.shift.isDown;
         let currentSpeed = isSprinting ? sprintSpeed : baseSpeed;
+        
+        const isOnGround = this.player.body.touching.down;
+        const isMoving = this.cursors.left.isDown || this.cursors.right.isDown;
 
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-currentSpeed);
             this.playerDirection = 'left';
+            this.player.setFlipX(true); // Flip sprite to face left
         } else if (this.cursors.right.isDown) {
             this.player.setVelocityX(currentSpeed);
             this.playerDirection = 'right';
+            this.player.setFlipX(false); // Face right (default)
         } else {
             this.player.setVelocityX(0);
         }
 
+        // --- ANIMATION LOGIC ---
+        if (!isOnGround) {
+            // Player is in the air
+            if (this.player.anims.currentAnim?.key !== 'jump') {
+                this.player.play('jump');
+            }
+        } else if (isMoving) {
+            // Player is moving on ground
+            if (this.player.anims.currentAnim?.key !== 'walk') {
+                this.player.play('walk');
+            }
+            // Speed up animation when sprinting
+            if (isSprinting) {
+                this.player.anims.msPerFrame = 80; // Faster animation
+            } else {
+                this.player.anims.msPerFrame = 125; // Normal speed
+            }
+        } else {
+            // Player is idle
+            if (this.player.anims.currentAnim?.key !== 'idle') {
+                this.player.play('idle');
+            }
+        }
+
         // --- PLAYER JUMPING LOGIC ---
-        if (this.player.body.touching.down) {
+        if (isOnGround) {
             this.jumpCount = 2;
         }
         if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) {
@@ -393,15 +574,98 @@ class GameScene extends Phaser.Scene {
             this.lastFired = time + 250; // 250ms cooldown
         }
 
-        // --- ENEMY PATROL LOGIC ---
+        // --- ENHANCED ENEMY AI BEHAVIOR ---
         this.enemies.children.iterate((enemy) => {
             if (!enemy.active) return; // Skip disabled enemies
-            if (enemy.body.velocity.x === 0) {
-                enemy.setVelocityX(100);
-            } else if (enemy.body.blocked.right) {
-                enemy.setVelocityX(-100);
-            } else if (enemy.body.blocked.left) {
-                enemy.setVelocityX(100);
+            
+            // Initialize enemy data if not set
+            if (!enemy.aiData) {
+                enemy.aiData = {
+                    patrolSpeed: Phaser.Math.Between(80, 120),
+                    aggroRange: 200,
+                    chaseSpeed: 180,
+                    originalX: enemy.x,
+                    patrolRange: 150,
+                    state: 'patrol', // 'patrol', 'chase', 'return'
+                    direction: 1,
+                    alertTime: 0,
+                    lastPlayerSeen: 0
+                };
+                enemy.setTint(0xffffff); // Reset tint
+            }
+            
+            const playerDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+            const playerDirection = this.player.x > enemy.x ? 1 : -1;
+            
+            // State machine for enemy behavior
+            switch (enemy.aiData.state) {
+                case 'patrol':
+                    // Normal patrol behavior
+                    const distanceFromOrigin = Math.abs(enemy.x - enemy.aiData.originalX);
+                    
+                    // Check if player is in aggro range
+                    if (playerDistance < enemy.aiData.aggroRange && Math.abs(enemy.y - this.player.y) < 100) {
+                        enemy.aiData.state = 'chase';
+                        enemy.aiData.alertTime = time + 3000; // Chase for 3 seconds
+                        enemy.setTint(0xff6666); // Red tint when aggressive
+                        break;
+                    }
+                    
+                    // Patrol movement
+                    if (distanceFromOrigin > enemy.aiData.patrolRange) {
+                        // Return to origin
+                        enemy.aiData.direction = enemy.x > enemy.aiData.originalX ? -1 : 1;
+                    } else if (enemy.body.blocked.right || enemy.body.blocked.left) {
+                        // Hit a wall, turn around
+                        enemy.aiData.direction *= -1;
+                    }
+                    
+                    enemy.setVelocityX(enemy.aiData.patrolSpeed * enemy.aiData.direction);
+                    enemy.setFlipX(enemy.aiData.direction < 0);
+                    break;
+                    
+                case 'chase':
+                    // Aggressive chase behavior
+                    enemy.setVelocityX(enemy.aiData.chaseSpeed * playerDirection);
+                    enemy.setFlipX(playerDirection < 0);
+                    enemy.aiData.lastPlayerSeen = time;
+                    
+                    // Stop chasing if player gets too far or time runs out
+                    if (playerDistance > enemy.aiData.aggroRange * 2 || time > enemy.aiData.alertTime) {
+                        enemy.aiData.state = 'return';
+                        enemy.setTint(0xffaa66); // Orange tint when returning
+                    }
+                    
+                    // Jump if player is above and close
+                    if (this.player.y < enemy.y - 50 && playerDistance < 100 && enemy.body.touching.down) {
+                        enemy.setVelocityY(-300);
+                    }
+                    break;
+                    
+                case 'return':
+                    // Return to patrol area
+                    const returnDirection = enemy.x > enemy.aiData.originalX ? -1 : 1;
+                    enemy.setVelocityX(enemy.aiData.patrolSpeed * returnDirection);
+                    enemy.setFlipX(returnDirection < 0);
+                    
+                    // Check if back in patrol area
+                    if (Math.abs(enemy.x - enemy.aiData.originalX) < 50) {
+                        enemy.aiData.state = 'patrol';
+                        enemy.setTint(0xffffff); // Reset to normal color
+                    }
+                    
+                    // Re-engage if player comes close again
+                    if (playerDistance < enemy.aiData.aggroRange * 0.7) {
+                        enemy.aiData.state = 'chase';
+                        enemy.aiData.alertTime = time + 2000;
+                        enemy.setTint(0xff6666);
+                    }
+                    break;
+            }
+            
+            // Simple wall collision detection
+            if (enemy.body.blocked.left || enemy.body.blocked.right) {
+                enemy.aiData.direction *= -1;
             }
         });
         
